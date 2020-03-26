@@ -64,6 +64,7 @@ class AlgorithmUtility:
             "CoralReefsOptimization": basic_algorithms.CoralReefsOptimization,
             "ForestOptimizationAlgorithm": basic_algorithms.ForestOptimizationAlgorithm,
             "MonarchButterflyOptimization": basic_algorithms.MonarchButterflyOptimization,
+            "WolfSearchAlgorithm": basic_algorithms.WolfSearchAlgorithm,
             "HybridBatAlgorithm": modified_algorithms.HybridBatAlgorithm,
             "DifferentialEvolutionMTS": modified_algorithms.DifferentialEvolutionMTS,
             "DifferentialEvolutionMTSv1": modified_algorithms.DifferentialEvolutionMTSv1,
