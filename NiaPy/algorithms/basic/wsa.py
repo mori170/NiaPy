@@ -129,14 +129,28 @@ class WolfSearchAlgorithm(Algorithm):
 		return Wolves, Evaluations, {}
 
 	def updateIfBetter(self, task, Wolves, Evaluations, wolfTmp, index):
-		wolfTmpEvaluation = apply_along_axis(task.eval, 0, wolfTmp)
+		wolfTmpEvaluation = task.eval(wolfTmp)
 		if wolfTmpEvaluation < Evaluations[index]:
 			Wolves[index] = wolfTmp
 			Evaluations[index] = wolfTmpEvaluation
 
-	def searchWithinVisual(self, wolfTmp):
-		for i in range(len(wolfTmp)):
-			wolfTmp[i] = wolfTmp[i] + self.alpha * self.randn() * self.r
+	def searchWithinVisual(self, task, wolf):
+		while True:
+			wolfTmp = wolf + self.alpha * self.randn(len(wolf)) * self.r
+			if task.isFeasible(wolfTmp):
+				break
+
+	def escape(self, task, wolf, r):
+		newWolf = ndarray.copy(wolf)
+		for i in range(len(wolf)):
+			while True:
+				escape = self.randn() * ((task.bRange[i] / 2) - r)
+				tmpWolf = wolf[i] + self.alpha * escape
+				if task.isFeasible(tmpWolf):
+					newWolf[i] = tmpWolf
+					break
+
+		return newWolf
 
 	def runIteration(self, task, Wolves, Evaluations, xb, fxb, **dparams):
 		r"""Core function of Wolf Search Algorithm.
@@ -161,36 +175,38 @@ class WolfSearchAlgorithm(Algorithm):
 		for index, wolf in enumerate(Wolves):
 			wolfTmp = ndarray.copy(wolf)
 
-			self.searchWithinVisual(wolfTmp)
+			self.searchWithinVisual(task, wolfTmp)
 			self.updateIfBetter(task, Wolves, Evaluations, wolfTmp, index)
 
 			# Calculate distance from current point to all other points
 			distances = [linalg.norm(wolf - Wolves[i]) for i in range(self.NP)]
 
-			satisfiedIndex = [index for index, dist in enumerate(distances) if 0 < dist < self.r]
+			satisfiedIndexes = [index for index, dist in enumerate(distances) if 0 < dist < self.r]
 
-			if len(satisfiedIndex) > 0:
-				satisfiedEvaluation = apply_along_axis(task.eval, 1, Wolves[satisfiedIndex])
+			if len(satisfiedIndexes) > 0:
+				satisfiedEvaluation = Evaluations[satisfiedIndexes]
 				bestSatisfiedIndex = argmin(satisfiedEvaluation)
-				bestWolf = Wolves[satisfiedIndex[bestSatisfiedIndex]]
+				bestWolf = Wolves[satisfiedIndexes[bestSatisfiedIndex]]
 
 				# Move towards the better position
 				for i in range(len(bestWolf)):
 					r = sqrt((bestWolf[i] - wolf[i]) ** 2 + r)
 
 				beta1 = 1 * exp(-1 * r ** 2)
-				newWolf = wolf * (1 - beta1) + bestWolf * beta1 + self.alpha * self.randn()
+				while True:
+					newWolf = wolf * (1 - beta1) + bestWolf * beta1 + self.alpha * self.randn()
+					if task.isFeasible(newWolf):
+						break
 
 				self.updateIfBetter(task, Wolves, Evaluations, newWolf, index)
 			else:
 				wolfTmp = ndarray.copy(wolf)
 
-				self.searchWithinVisual(wolfTmp)
+				self.searchWithinVisual(task, wolfTmp)
 				self.updateIfBetter(task, Wolves, Evaluations, wolfTmp, index)
 
 			if self.rand() > self.pa:
-				escape = self.randn(len(wolf)) * ((task.bRange / 2) - r)
-				newWolf = wolf + self.alpha * escape
+				newWolf = self.escape(task, wolf, r)
 				self.updateIfBetter(task, Wolves, Evaluations, newWolf, index)
 
 		bestEvalIndex = argmin(Evaluations)
