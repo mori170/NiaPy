@@ -179,7 +179,7 @@ class WolfSearchAlgorithm(Algorithm):
 			self.updateIfBetter(task, Wolves, Evaluations, wolfTmp, index)
 
 			# Calculate distance from current point to all other points
-			distances = [linalg.norm(wolf - Wolves[i]) for i in range(self.NP)]
+			distances = [sqrt(sum((wolf - Wolves[i]) ** 2)) for i in range(self.NP)]
 
 			satisfiedIndexes = [index for index, dist in enumerate(distances) if 0 < dist < self.r]
 
